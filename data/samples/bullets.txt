@@ -1,0 +1,4 @@
+Responsible for managing social media accounts and various other tasks
+Helped the team with things
+Led migration of billing service to AWS, cutting monthly infra cost 32% for 1.2M users
+Worked on several projects using Python, SQL, Tableau, Excel and many other tools in a fast paced environment with cross functional teams across the organization

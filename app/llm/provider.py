@@ -10,7 +10,7 @@ import re
 
 PROVIDERS = {
     # name: (base_url, env var for key, default model)
-    "groq": ("https://api.groq.com/openai/v1", "GROQ_API_KEY", "llama-3.3-70b-versatile"),
+    "groq": ("https://api.groq.com/openai/v1", "GROQ_API_KEY", "openai/gpt-oss-120b"),
     "gemini": ("https://generativelanguage.googleapis.com/v1beta/openai/", "GEMINI_API_KEY",
                "gemini-2.0-flash"),
     "openrouter": ("https://openrouter.ai/api/v1", "OPENROUTER_API_KEY",
@@ -40,7 +40,7 @@ def model_name() -> str:
     return os.getenv("LLM_MODEL") or PROVIDERS[provider_name()][2]
 
 
-def chat(messages: list[dict], temperature: float = 0.7, max_tokens: int = 1200,
+def chat(messages: list[dict], temperature: float = 0.7, max_tokens: int = 4000,
          json_mode: bool = False) -> str:
     kwargs = {"response_format": {"type": "json_object"}} if json_mode else {}
     resp = _client().chat.completions.create(

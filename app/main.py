@@ -1,5 +1,9 @@
 """FastAPI entry point. Routes only — logic lives in analyzers/, llm/, mercy/."""
-from fastapi import FastAPI, File, HTTPException, Query, UploadFile
+import json
+
+from fastapi import FastAPI, Request, File, HTTPException, Query, UploadFile
+from fastapi.responses import JSONResponse, RedirectResponse
+from openai import APIError
 
 from app.analyzers.code_metrics import analyze_code
 from app.analyzers.resume_parser import analyze_resume
@@ -16,6 +20,25 @@ app = FastAPI(
                 "Typical flow: /analyze/* → /roast → /mercy.",
     version="0.1.0",
 )
+
+
+@app.exception_handler(APIError)
+async def llm_provider_error(request: Request, exc: APIError):
+    """Turn LLM provider failures (bad key, retired model, rate limit) into readable 502s."""
+    return JSONResponse(status_code=502, content={
+        "detail": f"LLM provider error ({type(exc).__name__}): {exc.message}",
+        "hint": "Check /health and the API key / LLM_MODEL in .env, or set DEMO_MODE=true."})
+
+
+@app.exception_handler(json.JSONDecodeError)
+async def llm_bad_json(request: Request, exc: json.JSONDecodeError):
+    return JSONResponse(status_code=502, content={
+        "detail": "The LLM returned malformed JSON. Try the request again."})
+
+
+@app.get("/", include_in_schema=False)
+def root():
+    return RedirectResponse(url="/docs")
 
 
 @app.get("/health")

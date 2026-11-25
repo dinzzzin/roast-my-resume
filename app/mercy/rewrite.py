@@ -1,5 +1,6 @@
 """'Have Mercy' rewrites: drop the persona, fix the work, validate, retry on failure."""
 from app.llm.provider import chat, extract_json, is_demo_mode
+from app.mercy import equivalence
 from app.mercy.validate import validate_bullet, validate_code
 from app.rag.retriever import retrieve
 from app.schemas import AnalysisResult, Finding, MercyItem, MercyResponse
@@ -29,18 +30,44 @@ def _rewrite_one(finding: Finding, source_type: str) -> MercyItem:
             'Return ONLY JSON: {"revised": str, "explanation": str}')},
     ]
     revised, explanation, ok, error = finding.snippet, "", False, ""
+    check: equivalence.EquivalenceResult | None = None
+    cases: list[str] | None = None
     for attempt in range(1, MAX_ATTEMPTS + 1):
         data = extract_json(chat(messages, temperature=0.1, json_mode=True))
         revised, explanation = data.get("revised", ""), data.get("explanation", "")
         ok, error = validate(revised)
-        if ok:
-            break
-        # Feed the validator error back to the model and try again.
-        messages += [{"role": "assistant", "content": revised},
-                     {"role": "user", "content": f"That failed validation: {error}. Fix it and "
-                                                 "return the same JSON format."}]
+        if not ok:
+            # Feed the validator error back to the model and try again.
+            feedback = f"That failed validation: {error}. Fix it and return the same JSON format."
+        else:
+            check, cases = _check_behavior(finding.snippet, revised, source_type, cases)
+            if check is None or check.equivalent is not False:
+                break  # behaves the same, or can't be tested: accept it
+            feedback = equivalence.feedback_message(check)
+        if attempt < MAX_ATTEMPTS:
+            messages += [{"role": "assistant", "content": revised},
+                         {"role": "user", "content": feedback}]
     return MercyItem(finding_id=finding.id, original=finding.snippet, revised=revised,
-                     explanation=explanation or error, valid=ok, attempts=attempt)
+                     explanation=explanation or error, valid=ok, attempts=attempt,
+                     equivalent=check.equivalent if check else None,
+                     cases_checked=check.cases_checked if check else 0,
+                     mismatches=check.mismatches if check else [],
+                     equivalence_note=check.note if check else "")
+
+
+def _check_behavior(original: str, revised: str, source_type: str, cases: list[str] | None):
+    """Run the equivalence check for code. Test inputs are generated once and reused."""
+    if source_type != "code" or not equivalence.enabled():
+        return None, cases
+    reason = equivalence.untestable_reason(original)
+    if reason:
+        return equivalence.EquivalenceResult(None, note=f"not tested: {reason}"), cases
+    if cases is None:
+        try:
+            cases = equivalence.generate_cases(original)
+        except Exception as e:  # LLM hiccup: skip the check rather than fail the rewrite
+            return equivalence.EquivalenceResult(None, note=f"could not generate inputs: {e}"), []
+    return equivalence.run_cases(original, revised, cases), cases
 
 
 def _demo_item(finding: Finding, source_type: str) -> MercyItem:

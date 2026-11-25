@@ -69,6 +69,12 @@ class MercyItem(BaseModel):
     explanation: str = ""
     valid: bool = Field(..., description="Code: passes ast.parse. Resume: passes bullet rules.")
     attempts: int = 1
+    # Behavior-equivalence check (code only). None = not run or not testable.
+    equivalent: Optional[bool] = Field(None, description="Same outputs/exceptions as the original")
+    cases_checked: int = 0
+    mismatches: list[dict] = Field(default_factory=list,
+                                   description="Inputs where original and rewrite differ")
+    equivalence_note: str = ""
 
 
 class MercyResponse(BaseModel):

@@ -1,6 +1,7 @@
 """'Have Mercy' rewrites: drop the persona, fix the work, validate, retry on failure."""
 from app.llm.provider import chat, extract_json, is_demo_mode
 from app.mercy.validate import validate_bullet, validate_code
+from app.rag.retriever import retrieve
 from app.schemas import AnalysisResult, Finding, MercyItem, MercyResponse
 
 MAX_ATTEMPTS = 3
@@ -17,10 +18,14 @@ SYSTEM = {
 
 def _rewrite_one(finding: Finding, source_type: str) -> MercyItem:
     validate = validate_code if source_type == "code" else validate_bullet
+    guidelines = retrieve(f"{finding.metric}: {finding.detail}", source_type, top_k=2)
     messages = [
         {"role": "system", "content": SYSTEM[source_type]},
         {"role": "user", "content": (
             f"Problems: {finding.detail}\n\nOriginal:\n{finding.snippet}\n\n"
+            + (f"Follow these guidelines:\n{guidelines}\n\n" if guidelines else "")
+            + "If your rewrite changes behavior in any way (for example, how missing keys "
+            "or errors are handled), say so explicitly in the explanation.\n\n"
             'Return ONLY JSON: {"revised": str, "explanation": str}')},
     ]
     revised, explanation, ok, error = finding.snippet, "", False, ""

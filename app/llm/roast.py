@@ -27,7 +27,9 @@ def generate_roast(analysis: AnalysisResult, persona_id: str) -> RoastResponse:
                 detail=f.detail, location=f.location)) for f in analysis.findings],
         )
 
-    context = retrieve(" ".join(f.metric for f in analysis.findings), analysis.source_type)
+    # One query per finding so each problem pulls its own guideline.
+    context = retrieve([f"{f.metric}: {f.detail}" for f in analysis.findings],
+                       analysis.source_type, top_k=4)
     user_prompt = (
         f"Roast this {analysis.source_type} submission. Findings measured by our analyzer:\n"
         f"{_findings_payload(analysis)}\n\n"

@@ -1,0 +1,474 @@
+{
+ "meta": {
+  "when": "2026-11-27 10:51",
+  "api": "http://localhost:8000",
+  "model": "openai/gpt-oss-120b"
+ },
+ "rows": [
+  {
+   "sample": "01_deep_nesting",
+   "expected": "nesting_depth",
+   "found": "nesting_depth",
+   "caught": true,
+   "false_alarm": null,
+   "extra": "",
+   "mercy_seconds": 9.7,
+   "items": [
+    {
+     "valid": true,
+     "equivalent": true,
+     "attempts": 1,
+     "cases": 12,
+     "note": "",
+     "before": {
+      "nesting": 6,
+      "complexity": 7,
+      "length": 10
+     },
+     "targeted": [
+      "nesting_depth"
+     ],
+     "after": {
+      "nesting": 2,
+      "complexity": 6,
+      "length": 26
+     },
+     "resolved": [
+      "nesting_depth"
+     ],
+     "unresolved": []
+    }
+   ]
+  },
+  {
+   "sample": "02_long_function",
+   "expected": "function_length",
+   "found": "cyclomatic_complexity, function_length",
+   "caught": true,
+   "false_alarm": null,
+   "extra": "cyclomatic_complexity",
+   "mercy_seconds": 6.1,
+   "items": [
+    {
+     "valid": true,
+     "equivalent": true,
+     "attempts": 1,
+     "cases": 12,
+     "note": "",
+     "before": {
+      "nesting": 2,
+      "complexity": 11,
+      "length": 43
+     },
+     "targeted": [
+      "cyclomatic_complexity",
+      "function_length"
+     ],
+     "after": {
+      "nesting": 2,
+      "complexity": 6,
+      "length": 19
+     },
+     "resolved": [
+      "cyclomatic_complexity",
+      "function_length"
+     ],
+     "unresolved": []
+    }
+   ]
+  },
+  {
+   "sample": "03_flag_argument",
+   "expected": "cyclomatic_complexity",
+   "found": "cyclomatic_complexity",
+   "caught": true,
+   "false_alarm": null,
+   "extra": "",
+   "mercy_seconds": 5.0,
+   "items": [
+    {
+     "valid": true,
+     "equivalent": true,
+     "attempts": 1,
+     "cases": 12,
+     "note": "",
+     "before": {
+      "nesting": 3,
+      "complexity": 12,
+      "length": 23
+     },
+     "targeted": [
+      "cyclomatic_complexity"
+     ],
+     "after": {
+      "nesting": 1,
+      "complexity": 4,
+      "length": 11
+     },
+     "resolved": [
+      "cyclomatic_complexity"
+     ],
+     "unresolved": []
+    }
+   ]
+  },
+  {
+   "sample": "04_bad_names",
+   "expected": "naming",
+   "found": "naming",
+   "caught": true,
+   "false_alarm": null,
+   "extra": "",
+   "mercy_seconds": 3.7,
+   "items": [
+    {
+     "valid": true,
+     "equivalent": true,
+     "attempts": 1,
+     "cases": 12,
+     "note": "",
+     "before": {
+      "nesting": 2,
+      "complexity": 4,
+      "length": 8
+     },
+     "targeted": [
+      "naming"
+     ],
+     "after": {
+      "nesting": 2,
+      "complexity": 4,
+      "length": 8
+     },
+     "resolved": [
+      "naming"
+     ],
+     "unresolved": []
+    }
+   ]
+  },
+  {
+   "sample": "05_except_pass",
+   "expected": "nesting_depth",
+   "found": "nesting_depth",
+   "caught": true,
+   "false_alarm": null,
+   "extra": "",
+   "mercy_seconds": 19.1,
+   "items": [
+    {
+     "valid": true,
+     "equivalent": true,
+     "attempts": 1,
+     "cases": 12,
+     "note": "",
+     "before": {
+      "nesting": 5,
+      "complexity": 9,
+      "length": 19
+     },
+     "targeted": [
+      "nesting_depth"
+     ],
+     "after": {
+      "nesting": 2,
+      "complexity": 8,
+      "length": 19
+     },
+     "resolved": [
+      "nesting_depth"
+     ],
+     "unresolved": []
+    }
+   ]
+  },
+  {
+   "sample": "06_magic_numbers",
+   "expected": "cyclomatic_complexity",
+   "found": "cyclomatic_complexity",
+   "caught": true,
+   "false_alarm": null,
+   "extra": "",
+   "mercy_seconds": 19.8,
+   "items": [
+    {
+     "valid": true,
+     "equivalent": true,
+     "attempts": 1,
+     "cases": 12,
+     "note": "",
+     "before": {
+      "nesting": 1,
+      "complexity": 15,
+      "length": 22
+     },
+     "targeted": [
+      "cyclomatic_complexity"
+     ],
+     "after": {
+      "nesting": 1,
+      "complexity": 8,
+      "length": 28
+     },
+     "resolved": [
+      "cyclomatic_complexity"
+     ],
+     "unresolved": []
+    }
+   ]
+  },
+  {
+   "sample": "07_mutable_default",
+   "expected": "nesting_depth",
+   "found": "nesting_depth",
+   "caught": true,
+   "false_alarm": null,
+   "extra": "",
+   "mercy_seconds": 16.8,
+   "items": [
+    {
+     "valid": true,
+     "equivalent": true,
+     "attempts": 1,
+     "cases": 12,
+     "note": "",
+     "before": {
+      "nesting": 5,
+      "complexity": 6,
+      "length": 8
+     },
+     "targeted": [
+      "nesting_depth"
+     ],
+     "after": {
+      "nesting": 3,
+      "complexity": 7,
+      "length": 13
+     },
+     "resolved": [
+      "nesting_depth"
+     ],
+     "unresolved": []
+    }
+   ]
+  },
+  {
+   "sample": "08_boolean_soup",
+   "expected": "cyclomatic_complexity",
+   "found": "cyclomatic_complexity",
+   "caught": true,
+   "false_alarm": null,
+   "extra": "",
+   "mercy_seconds": 24.9,
+   "items": [
+    {
+     "valid": true,
+     "equivalent": true,
+     "attempts": 1,
+     "cases": 12,
+     "note": "",
+     "before": {
+      "nesting": 2,
+      "complexity": 18,
+      "length": 9
+     },
+     "targeted": [
+      "cyclomatic_complexity"
+     ],
+     "after": {
+      "nesting": 2,
+      "complexity": 17,
+      "length": 15
+     },
+     "resolved": [],
+     "unresolved": [
+      "cyclomatic_complexity"
+     ]
+    }
+   ]
+  },
+  {
+   "sample": "09_copy_paste",
+   "expected": "cyclomatic_complexity",
+   "found": "cyclomatic_complexity",
+   "caught": true,
+   "false_alarm": null,
+   "extra": "",
+   "mercy_seconds": 22.5,
+   "items": [
+    {
+     "valid": true,
+     "equivalent": null,
+     "attempts": 1,
+     "cases": 0,
+     "note": "could not generate inputs: Error code: 429 - Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m7e5sgj9en2v28zwyz8eqqq0` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 6110, Requested 1949. Please try again in 442.5ms. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing",
+     "before": {
+      "nesting": 2,
+      "complexity": 13,
+      "length": 33
+     },
+     "targeted": [
+      "cyclomatic_complexity"
+     ],
+     "after": {
+      "nesting": 2,
+      "complexity": 3,
+      "length": 8
+     },
+     "resolved": [
+      "cyclomatic_complexity"
+     ],
+     "unresolved": []
+    }
+   ]
+  },
+  {
+   "sample": "10_dict_access",
+   "expected": "nesting_depth",
+   "found": "nesting_depth",
+   "caught": true,
+   "false_alarm": null,
+   "extra": "",
+   "mercy_seconds": 9.7,
+   "items": [
+    {
+     "valid": true,
+     "equivalent": true,
+     "attempts": 1,
+     "cases": 12,
+     "note": "",
+     "before": {
+      "nesting": 5,
+      "complexity": 6,
+      "length": 12
+     },
+     "targeted": [
+      "nesting_depth"
+     ],
+     "after": {
+      "nesting": 2,
+      "complexity": 6,
+      "length": 13
+     },
+     "resolved": [
+      "nesting_depth"
+     ],
+     "unresolved": []
+    }
+   ]
+  },
+  {
+   "sample": "11_string_builder",
+   "expected": "nesting_depth",
+   "found": "nesting_depth",
+   "caught": true,
+   "false_alarm": null,
+   "extra": "",
+   "mercy_seconds": 22.4,
+   "items": [
+    {
+     "valid": true,
+     "equivalent": true,
+     "attempts": 1,
+     "cases": 12,
+     "note": "",
+     "before": {
+      "nesting": 5,
+      "complexity": 7,
+      "length": 22
+     },
+     "targeted": [
+      "nesting_depth"
+     ],
+     "after": {
+      "nesting": 4,
+      "complexity": 6,
+      "length": 18
+     },
+     "resolved": [],
+     "unresolved": [
+      "nesting_depth"
+     ]
+    }
+   ]
+  },
+  {
+   "sample": "12_module_import",
+   "expected": "nesting_depth",
+   "found": "naming, nesting_depth",
+   "caught": true,
+   "false_alarm": null,
+   "extra": "naming",
+   "mercy_seconds": 41.3,
+   "items": [
+    {
+     "valid": false,
+     "equivalent": null,
+     "attempts": 3,
+     "cases": 0,
+     "note": "",
+     "before": {
+      "nesting": 5,
+      "complexity": 6,
+      "length": 10
+     },
+     "targeted": [
+      "naming",
+      "nesting_depth"
+     ]
+    }
+   ]
+  },
+  {
+   "sample": "13_class_method",
+   "expected": "nesting_depth",
+   "found": "nesting_depth",
+   "caught": true,
+   "false_alarm": null,
+   "extra": "",
+   "mercy_seconds": 3.0,
+   "items": [
+    {
+     "valid": true,
+     "equivalent": null,
+     "attempts": 2,
+     "cases": 0,
+     "note": "not tested: methods need a class instance",
+     "before": {
+      "nesting": 5,
+      "complexity": 6,
+      "length": 12
+     },
+     "targeted": [
+      "nesting_depth"
+     ],
+     "after": {
+      "nesting": 3,
+      "complexity": 5,
+      "length": 11
+     },
+     "resolved": [
+      "nesting_depth"
+     ],
+     "unresolved": []
+    }
+   ]
+  },
+  {
+   "sample": "14_control_clean",
+   "expected": "none",
+   "found": "none",
+   "caught": null,
+   "false_alarm": false,
+   "extra": ""
+  },
+  {
+   "sample": "15_control_clean",
+   "expected": "none",
+   "found": "none",
+   "caught": null,
+   "false_alarm": false,
+   "extra": ""
+  }
+ ]
+}

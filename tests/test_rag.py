@@ -2,6 +2,7 @@
 The real sentence-transformers model is exercised by `docker build`."""
 import os
 import re
+import zlib
 from pathlib import Path
 
 import numpy as np
@@ -14,7 +15,7 @@ from app.rag import retriever  # noqa: E402
 from app.rag.build_index import build_all, chunk_markdown, load_chunks  # noqa: E402
 
 KB = Path(__file__).parent.parent / "data" / "kb"
-DIM = 512
+DIM = 8192
 
 
 def hash_embed(texts):
@@ -22,7 +23,7 @@ def hash_embed(texts):
     out = np.zeros((len(texts), DIM), dtype="float32")
     for row, text in enumerate(texts):
         for word in re.findall(r"[a-z_]+", text.lower()):
-            out[row, hash(word) % DIM] += 1
+            out[row, zlib.crc32(word.encode()) % DIM] += 1  # stable, unlike hash()
     norms = np.linalg.norm(out, axis=1, keepdims=True)
     return out / np.maximum(norms, 1e-9)
 

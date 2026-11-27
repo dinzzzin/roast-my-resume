@@ -44,11 +44,19 @@ def main() -> None:
     sys.stdout = io.StringIO()  # swallow anything the submitted code prints
     result: dict = {"cases": []}
     try:
-        original = _load(payload["original"], payload["original_name"])
-        revised = _load(payload["revised"], payload["revised_name"])
-        for case in payload["cases"]:
-            result["cases"].append({"input": case, "original": _outcome(original, case),
-                                    "revised": _outcome(revised, case)})
+        cases = payload["cases"]
+        for n, case in enumerate(cases):
+            # Fresh copies per input, so state can't leak from one case into the next.
+            # Then a follow-up call with the NEXT input on the same copies: if the original
+            # kept state from the first call (e.g. a mutable default), the results differ.
+            follow_up = cases[(n + 1) % len(cases)]
+            original = _load(payload["original"], payload["original_name"])
+            revised = _load(payload["revised"], payload["revised_name"])
+            result["cases"].append({
+                "input": case, "follow_up": follow_up,
+                "original": _outcome(original, case), "revised": _outcome(revised, case),
+                "original_again": _outcome(original, follow_up),
+                "revised_again": _outcome(revised, follow_up)})
     except Exception as e:  # noqa: BLE001
         result["load_error"] = f"{type(e).__name__}: {e}"
     sys.stdout = real_stdout

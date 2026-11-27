@@ -81,3 +81,17 @@ def test_elif_does_not_inflate_nesting():
     from app.analyzers.code_metrics import analyze_source
     src = "def f(a):\n    if a: pass\n    elif a > 1: pass\n    elif a > 2:\n        if a > 3: pass\n"
     assert analyze_source(src)[0].nesting == 2
+
+
+def test_lambda_and_comprehension_names_are_not_flagged():
+    from app.analyzers.code_metrics import analyze_source
+    src = ("def f(rows, d):\n    out = sorted(rows, key=lambda p: p[1])\n"
+           "    return [v for v in out if v]\n")
+    stats = analyze_source(src)[0]
+    assert stats.bad_names == ["d"]  # the real parameter is still caught
+
+
+def test_indented_method_snippet_is_analyzed():
+    method = "    def run(self, xs):\n        for x in xs:\n            if x:\n                if x > 1:\n                    if x > 2:\n                        print(x)\n"
+    r = client.post("/analyze/code", json={"code": method})
+    assert r.status_code == 200 and r.json()["summary"]["functions"][0]["nesting"] == 4

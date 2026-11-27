@@ -5,6 +5,7 @@ only the worst ones — those are what the persona roasts.
 """
 import ast
 import io
+import textwrap
 import zipfile
 from dataclasses import dataclass
 
@@ -71,12 +72,21 @@ def _complexity(node: ast.AST) -> int:
 
 
 def _bad_names(func: ast.AST) -> list[str]:
+    # Short names inside a lambda or comprehension (`lambda p: p[1]`, `for v in ...`)
+    # are idiomatic Python and live for one expression, so they are not flagged.
+    idiomatic = set()
+    for child in ast.walk(func):
+        if isinstance(child, ast.Lambda):
+            idiomatic.update(a.arg for a in child.args.args)
+        elif isinstance(child, ast.comprehension):
+            idiomatic.update(n.id for n in ast.walk(child.target) if isinstance(n, ast.Name))
     names = set()
     for child in ast.walk(func):
         if isinstance(child, ast.arg):
             names.add(child.arg)
         elif isinstance(child, ast.Name) and isinstance(child.ctx, ast.Store):
             names.add(child.id)
+    names -= idiomatic
     bad = [n for n in names if (len(n) <= 2 and n not in OK_SHORT_NAMES)
            or n.lower() in {"data", "temp", "tmp", "stuff", "thing", "foo", "bar", "obj"}]
     return sorted(bad)
@@ -143,7 +153,9 @@ def fetch_repo_python_files(repo_url: str) -> dict[str, str]:
 
 def analyze_code(code: str | None = None, repo_url: str | None = None,
                  max_findings: int = 8) -> AnalysisResult:
-    sources = fetch_repo_python_files(repo_url) if repo_url else {"snippet.py": code or ""}
+    # Dedent pasted code so an indented method or block copied from a class still parses.
+    sources = (fetch_repo_python_files(repo_url) if repo_url
+               else {"snippet.py": textwrap.dedent(code or "")})
     all_stats, skipped = [], []
     for path, src in sources.items():
         try:
@@ -166,5 +178,9 @@ def analyze_code(code: str | None = None, repo_url: str | None = None,
         "avg_complexity": round(sum(s.complexity for s in all_stats) / len(all_stats), 2)
         if all_stats else 0,
         "worst_function": max(all_stats, key=lambda s: s.complexity).name if all_stats else None,
+        # Raw numbers for every function, so a rewrite can be re-measured against the original.
+        "functions": [{"file": s.file, "name": s.name, "length": s.length, "nesting": s.nesting,
+                       "complexity": s.complexity, "bad_names": len(s.bad_names)}
+                      for s in all_stats],
     }
     return AnalysisResult(source_type="code", findings=findings, summary=summary)

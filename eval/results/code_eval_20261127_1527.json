@@ -1,0 +1,524 @@
+{
+ "meta": {
+  "when": "2026-11-27 15:27",
+  "api": "http://localhost:8000",
+  "model": "openai/gpt-oss-120b"
+ },
+ "rows": [
+  {
+   "sample": "01_deep_nesting",
+   "expected": "nesting_depth",
+   "found": "nesting_depth",
+   "caught": true,
+   "false_alarm": null,
+   "extra": "",
+   "mercy_seconds": 7.0,
+   "items": [
+    {
+     "valid": true,
+     "equivalent": true,
+     "attempts": 1,
+     "cases": 12,
+     "note": "",
+     "before": {
+      "nesting": 6,
+      "complexity": 7,
+      "length": 10
+     },
+     "revised": "def validate_orders(orders, min_total):\n    valid = []\n    for order in orders:\n        if order is None:\n            continue\n        items = order.get('items')\n        if not items:\n            continue\n        if order.get('total', 0) < min_total:\n            continue\n        if order.get('status') == 'cancelled':\n            continue\n        # \"id\" is required; let KeyError surface if missing\n        valid.append(order['id'])\n    return valid",
+     "explanation": "The function is rewritten to eliminate the six\u2011level nesting by using guard clauses that skip the current iteration as soon as a condition fails. This keeps the main logic (appending the order id) at a single indentation level, improving readability. Dictionary access now consistently uses `dict.get` for optional keys (`items`, `total`, `status`) with sensible defaults, while the required `id` key is accessed directly so a missing id still raises a `KeyError` as before. The behavior of the original code is preserved; only the structure is flattened.",
+     "mismatches": [],
+     "targeted": [
+      "nesting_depth"
+     ],
+     "after": {
+      "nesting": 2,
+      "complexity": 6,
+      "length": 15
+     },
+     "resolved": [
+      "nesting_depth"
+     ],
+     "unresolved": []
+    }
+   ]
+  },
+  {
+   "sample": "02_long_function",
+   "expected": "function_length",
+   "found": "cyclomatic_complexity, function_length",
+   "caught": true,
+   "false_alarm": null,
+   "extra": "cyclomatic_complexity",
+   "mercy_seconds": 24.7,
+   "items": [
+    {
+     "valid": true,
+     "equivalent": true,
+     "attempts": 3,
+     "cases": 12,
+     "note": "",
+     "before": {
+      "nesting": 2,
+      "complexity": 11,
+      "length": 43
+     },
+     "revised": "def _clean_row(row):\n    \"\"\"Return a cleaned tuple (name, region, amount) or ``None`` if the row\n    should be ignored (i.e., missing or empty name).\"\"\"\n    name = row.get(\"name\", \"\").strip()\n    if not name:\n        return None\n    region = row.get(\"region\", \"\").strip().upper()\n    amount = row.get(\"amount\", 0)\n    if amount is None:\n        amount = 0\n    return (name, region, amount)\n\ndef _aggregate_totals(cleaned):\n    \"\"\"Aggregate sales amount per region from the cleaned rows.\"\"\"\n    totals = {}\n    for _, region, amount in cleaned:\n        totals[region] = totals.get(region, 0) + amount\n    return totals\n\ndef _best_region(totals):\n    \"\"\"Return ``(best_region, best_total)`` following the original logic.\n    The original code starts with ``best_region = None`` and ``best_total = -1``\n    and only updates when a region total is *greater* than the current best.\n    This means negative totals never become the best region. We replicate that\n    exact behaviour, including the case where *totals* is empty.\n    \"\"\"\n    best_region = None\n    best_total = -1\n    for region, total in totals.items():\n        if total > best_total:\n            best_region = region\n            best_total = total\n    return best_region, best_total\n\ndef _aggregate_people(cleaned):\n    \"\"\"Aggregate sales amount per salesperson from the cleaned rows.\"\"\"\n    people = {}\n    for name, _, amount in cleaned:\n        people[name] = people.get(name, 0) + amount\n    return people\n\ndef sales_report(rows):\n    \"\"\"Generate a formatted sales report.\n\n    The function mirrors the original implementation exactly, including edge\n    cases such as empty input, rows without a valid ``name``, and negative\n    sales amounts. No behavioural changes are introduced.\n    \"\"\"\n    # Clean and filter rows \u2013 keep only those with a non\u2011empty name.\n    cleaned = [_clean_row(r) for r in rows]\n    cleaned = [c for c in cleaned if c]\n\n    # Region totals and best region.\n    totals = _aggregate_totals(cleaned)\n    best_region, best_total = _best_region(totals)\n\n    # Salesperson totals and top three sellers.\n    people = _aggregate_people(cleaned)\n    top_people = sorted(people.items(), key=lambda p: p[1], reverse=True)[:3]\n\n    # Build the report.\n    lines = [\n        \"SALES REPORT\",\n        \"=\" * 20,\n    ]\n    for region in sorted(totals):\n        lines.append(f\"{region}: {totals[region]}\")\n    lines.append(\"-\" * 20)\n    lines.append(f\"Best region: {best_region} ({best_total})\")\n    lines.append(\"Top sellers:\")\n    for name, amount in top_people:\n        lines.append(f\"  {name}: {amount}\")\n    grand_total = sum(totals.values())\n    lines.append(f\"Grand total: {grand_total}\")\n    average = grand_total / len(cleaned) if cleaned else 0\n    lines.append(f\"Average sale: {round(average, 2)}\")\n    return \"\\n\".join(lines)",
+     "explanation": "The original function determined the best region by starting with `best_total = -1` and only updating when a region total was greater than that value. This meant that negative totals never became the best region, and when there were no valid rows the best region stayed `None` with a total of `-1`. In the refactor I introduced a helper `_best_region` that reproduces this exact logic: it initializes `best_region` to `None` and `best_total` to `-1`, then iterates over the totals updating only on a strictly greater comparison. All other helpers (`_clean_row`, `_aggregate_totals`, `_aggregate_people`) keep the original behavior, and the main `sales_report` assembles the report in the same order as before. This adjustment ensures the function now returns the same output for all edge cases, including inputs with negative amounts, empty inputs, or rows lacking a valid name.",
+     "mismatches": [],
+     "targeted": [
+      "cyclomatic_complexity",
+      "function_length"
+     ],
+     "after": {
+      "nesting": 2,
+      "complexity": 6,
+      "length": 36
+     },
+     "resolved": [
+      "cyclomatic_complexity",
+      "function_length"
+     ],
+     "unresolved": []
+    }
+   ]
+  },
+  {
+   "sample": "03_flag_argument",
+   "expected": "cyclomatic_complexity",
+   "found": "cyclomatic_complexity",
+   "caught": true,
+   "false_alarm": null,
+   "extra": "",
+   "mercy_seconds": 15.5,
+   "items": [
+    {
+     "valid": true,
+     "equivalent": true,
+     "attempts": 1,
+     "cases": 12,
+     "note": "",
+     "before": {
+      "nesting": 3,
+      "complexity": 12,
+      "length": 23
+     },
+     "revised": "def export(records, compact, mode):\n    if mode not in _MODE_HANDLERS:\n        raise ValueError(\"unknown mode\")\n    handler = _MODE_HANDLERS[mode]\n    return [handler(rec, compact) for rec in records]\n\ndef _handle_csv(rec, compact):\n    if compact:\n        return \",\".join(str(v) for v in rec.values())\n    return \", \".join(f\"{k}={v}\" for k, v in rec.items())\n\ndef _handle_json(rec, compact):\n    s = str(rec)\n    if compact:\n        s = s.replace(\" \", \"\")\n    return s\n\ndef _handle_keys(rec, compact):\n    if not rec:\n        return \"\"\n    if compact:\n        return list(rec)[0]\n    return \"|\".join(rec)\n\n_MODE_HANDLERS = {\n    \"csv\": _handle_csv,\n    \"json\": _handle_json,\n    \"keys\": _handle_keys,\n}",
+     "explanation": "The function was split into small, single\u2011purpose helpers (_handle_csv, _handle_json, _handle_keys) and a dispatch dictionary (_MODE_HANDLERS). This removes the nested if/elif chain, reducing cyclomatic complexity from 12 to a constant (validation + one branch per helper). The main export function now validates the mode early, looks up the appropriate handler, and builds the result list with a comprehension. Behavior is unchanged: CSV, JSON, and keys modes produce identical strings, and compact handling matches the original logic, including the edge case of empty records for the \"keys\" mode.",
+     "mismatches": [],
+     "targeted": [
+      "cyclomatic_complexity"
+     ],
+     "after": {
+      "nesting": 1,
+      "complexity": 4,
+      "length": 6
+     },
+     "resolved": [
+      "cyclomatic_complexity"
+     ],
+     "unresolved": []
+    }
+   ]
+  },
+  {
+   "sample": "04_bad_names",
+   "expected": "naming",
+   "found": "naming",
+   "caught": true,
+   "false_alarm": null,
+   "extra": "",
+   "mercy_seconds": 11.0,
+   "items": [
+    {
+     "valid": true,
+     "equivalent": true,
+     "attempts": 1,
+     "cases": 10,
+     "note": "",
+     "before": {
+      "nesting": 2,
+      "complexity": 4,
+      "length": 8
+     },
+     "revised": "def calculate_weighted_average_above_threshold(values, threshold, multiplier):\n    \"\"\"Calculate the rounded average of the sum of elements in *values* that exceed *threshold*, each multiplied by *multiplier*.\n\n    Returns ``0`` when *values* is empty to avoid division\u2011by\u2011zero.\n    \"\"\"\n    total = 0\n    for value in values:\n        if value > threshold:\n            total += value * multiplier\n    average = total / len(values) if values else 0\n    return round(average, 2)",
+     "explanation": "Renamed the function and its parameters to expressive names: *values* (the iterable), *threshold* (the comparison value), and *multiplier* (the factor applied to qualifying items). Replaced vague temporaries (*tmp*, *data*, *zz*) with *total*, *average*, and returned the rounded result directly. Added a clear docstring describing the purpose, inputs, and edge\u2011case handling. The logic\u2014summing values greater than the threshold, dividing by the original length (or returning 0 for an empty list), and rounding to two decimals\u2014remains exactly the same as the original implementation.",
+     "mismatches": [],
+     "targeted": [
+      "naming"
+     ],
+     "after": {
+      "nesting": 2,
+      "complexity": 4,
+      "length": 11
+     },
+     "resolved": [
+      "naming"
+     ],
+     "unresolved": []
+    }
+   ]
+  },
+  {
+   "sample": "05_except_pass",
+   "expected": "nesting_depth",
+   "found": "nesting_depth",
+   "caught": true,
+   "false_alarm": null,
+   "extra": "",
+   "mercy_seconds": 18.0,
+   "items": [
+    {
+     "valid": true,
+     "equivalent": true,
+     "attempts": 2,
+     "cases": 12,
+     "note": "",
+     "before": {
+      "nesting": 5,
+      "complexity": 9,
+      "length": 19
+     },
+     "revised": "def parse_settings(lines):\n    def _parse_line(line):\n        # Guard: ignore empty lines, comments, or lines without '='\n        if not line or line.startswith('#') or '=' not in line:\n            return None, None\n        key, value = line.split('=', 1)\n        key = key.strip()\n        val = value.strip()\n        if val.isdigit():\n            return key, int(val)\n        low = val.lower()\n        if low in ('true', 'false'):\n            return key, low == 'true'\n        return key, val\n\n    settings = {}\n    for line in lines:\n        try:\n            key, value = _parse_line(line)\n        except (ValueError, AttributeError):\n            # Mimic original: silently skip lines that raise these errors\n            continue\n        if key is not None:\n            settings[key] = value\n    return settings",
+     "explanation": "The refactor introduces a helper `_parse_line` that contains the core parsing logic, allowing the main loop to stay shallow. Guard clauses inside the helper replace nested `if` statements. The outer loop now wraps the helper call in a `try/except` that catches `ValueError` and `AttributeError`, exactly like the original code, and simply continues on those exceptions. This preserves the original behavior for non\u2011string inputs (e.g., a list) and for malformed lines, while keeping the code easier to read.",
+     "mismatches": [],
+     "targeted": [
+      "nesting_depth"
+     ],
+     "after": {
+      "nesting": 2,
+      "complexity": 9,
+      "length": 25
+     },
+     "resolved": [
+      "nesting_depth"
+     ],
+     "unresolved": []
+    }
+   ]
+  },
+  {
+   "sample": "06_magic_numbers",
+   "expected": "cyclomatic_complexity",
+   "found": "cyclomatic_complexity",
+   "caught": true,
+   "false_alarm": null,
+   "extra": "",
+   "mercy_seconds": 26.4,
+   "items": [
+    {
+     "valid": true,
+     "equivalent": true,
+     "attempts": 2,
+     "cases": 12,
+     "note": "",
+     "before": {
+      "nesting": 1,
+      "complexity": 15,
+      "length": 22
+     },
+     "revised": "def _base_cost(weight: float, zone: int) -> float:\n    zone_rates = {\n        1: (4.99, 7.5),\n        2: (6.99, 10.25),\n        3: (9.5, 14.0),\n        4: (12.0, 18.75),\n    }\n    if zone not in zone_rates:\n        return 25.0\n    under2, over2 = zone_rates[zone]\n    return under2 if weight < 2 else over2\n\ndef _surcharge(weight: float, cost: float) -> float:\n    if weight > 20:\n        return cost + 15\n    if weight > 10:\n        return cost + 7\n    return cost\n\ndef _apply_express(cost: float, express: bool, zone: int) -> float:\n    if not express:\n        return cost\n    return cost * 1.5 if zone in (1, 2) else cost * 2\n\ndef shipping_cost(weight: float, zone: int, express: bool) -> float:\n    \"\"\"Calculate shipping cost.\n\n    Mirrors the original implementation exactly, including returning the\n    integer ``0`` for non\u2011positive weights.\n    \"\"\"\n    if weight <= 0:\n        return 0  # Preserve original int return for non\u2011positive weight\n    cost = _base_cost(weight, zone)\n    cost = _surcharge(weight, cost)\n    cost = _apply_express(cost, express, zone)\n    return round(cost, 2)\n",
+     "explanation": "The refactor extracts the zone\u2011rate lookup, weight surcharge, and express\u2011multiplier into separate helper functions, reducing cyclomatic complexity. The core logic remains unchanged. To match the original behavior exactly, the early\u2011return for non\u2011positive weights now returns the integer ``0`` (instead of ``0.0``) as the original function did. All other paths still return ``round(cost, 2)`` which yields a float, preserving the original output types and rounding behavior.",
+     "mismatches": [],
+     "targeted": [
+      "cyclomatic_complexity"
+     ],
+     "after": {
+      "nesting": 1,
+      "complexity": 3,
+      "length": 12
+     },
+     "resolved": [
+      "cyclomatic_complexity"
+     ],
+     "unresolved": []
+    }
+   ]
+  },
+  {
+   "sample": "07_mutable_default",
+   "expected": "nesting_depth",
+   "found": "nesting_depth",
+   "caught": true,
+   "false_alarm": null,
+   "extra": "",
+   "mercy_seconds": 4.3,
+   "items": [
+    {
+     "valid": true,
+     "equivalent": true,
+     "attempts": 1,
+     "cases": 12,
+     "note": "",
+     "before": {
+      "nesting": 5,
+      "complexity": 6,
+      "length": 8
+     },
+     "revised": "def collect_tags(posts, seen=None):\n    if seen is None:\n        seen = []\n    for post in posts:\n        if not post:\n            continue\n        for tag in post.get(\"tags\", []):\n            if not tag:\n                continue\n            tag_lc = tag.lower()\n            if tag_lc not in seen:\n                seen.append(tag_lc)\n    return seen",
+     "explanation": "The function was refactored to eliminate the five\u2011level nesting by using guard clauses (`continue`) for the failure cases, keeping the main logic at a shallow indentation. The mutable default argument `seen=[]` was replaced with `seen=None` and an internal list initialization to avoid shared state across calls. `post.get(\"tags\", [])` safely provides an empty list when the key is missing, preserving the original behavior of silently skipping missing tags. The overall behavior\u2014collecting unique lower\u2011cased tags in order\u2014is unchanged.",
+     "mismatches": [],
+     "targeted": [
+      "nesting_depth"
+     ],
+     "after": {
+      "nesting": 3,
+      "complexity": 7,
+      "length": 13
+     },
+     "resolved": [
+      "nesting_depth"
+     ],
+     "unresolved": []
+    }
+   ]
+  },
+  {
+   "sample": "08_boolean_soup",
+   "expected": "cyclomatic_complexity",
+   "found": "cyclomatic_complexity",
+   "caught": true,
+   "false_alarm": null,
+   "extra": "",
+   "mercy_seconds": 19.1,
+   "items": [
+    {
+     "valid": true,
+     "equivalent": true,
+     "attempts": 1,
+     "cases": 12,
+     "note": "",
+     "before": {
+      "nesting": 2,
+      "complexity": 18,
+      "length": 9
+     },
+     "revised": "def is_eligible(age,income,student,veteran,state,score):\n    # Young or veteran eligibility\n    if (age>=18 and income<40000) or (student and age<26) or veteran:\n        if state in {'NY','NJ'} or (state=='CT' and score>600):\n            return True\n        if (score>700 and income<60000) or (veteran and score>550):\n            return True\n    # Senior eligibility\n    if (age>65 and income<30000) or age>70:\n        return (score>500) or veteran\n    return False",
+     "explanation": "The function was refactored to use early returns and explicit parentheses, reducing cyclomatic complexity. A set replaces repeated state equality checks, and the original logical order is preserved. No change in behaviour occurs; the same eligibility rules are applied, but the code is now clearer and easier to test.",
+     "mismatches": [],
+     "targeted": [
+      "cyclomatic_complexity"
+     ],
+     "after": {
+      "nesting": 2,
+      "complexity": 17,
+      "length": 11
+     },
+     "resolved": [],
+     "unresolved": [
+      "cyclomatic_complexity"
+     ]
+    }
+   ]
+  },
+  {
+   "sample": "09_copy_paste",
+   "expected": "cyclomatic_complexity",
+   "found": "cyclomatic_complexity",
+   "caught": true,
+   "false_alarm": null,
+   "extra": "",
+   "mercy_seconds": 14.7,
+   "items": [
+    {
+     "valid": true,
+     "equivalent": true,
+     "attempts": 1,
+     "cases": 12,
+     "note": "",
+     "before": {
+      "nesting": 2,
+      "complexity": 13,
+      "length": 33
+     },
+     "revised": "def _letter_grade(avg):\n    if avg >= 90:\n        return \"A\"\n    if avg >= 80:\n        return \"B\"\n    if avg >= 70:\n        return \"C\"\n    return \"F\"\n\ndef grade_summary(math=None, science=None, english=None):\n    \"\"\"Return a dict mapping each non\u2011empty subject list to its letter grade.\n\n    The function treats empty or ``None`` inputs as missing subjects, mirroring the\n    original behaviour where a falsy value caused the subject to be omitted from the\n    result.\n    \"\"\"\n    out = {}\n    subjects = {\"math\": math, \"science\": science, \"english\": english}\n    for name, scores in subjects.items():\n        if scores:  # truthy check keeps original skip\u2011empty\u2011list logic\n            avg = sum(scores) / len(scores)\n            out[name] = _letter_grade(avg)\n    return out\n",
+     "explanation": "Extracted the grade\u2011determination logic into a helper ``_letter_grade`` to remove repeated if/elif chains, reducing cyclomatic complexity. Replaced the three separate blocks with a loop over a ``subjects`` mapping, further simplifying the control flow. Kept the original truthiness checks (``if scores:``) to preserve the behavior of skipping empty or ``None`` inputs. Added a docstring for clarity. The overall functionality\u2014computing average scores and mapping them to letter grades\u2014remains unchanged.",
+     "mismatches": [],
+     "targeted": [
+      "cyclomatic_complexity"
+     ],
+     "after": {
+      "nesting": 2,
+      "complexity": 4,
+      "length": 14
+     },
+     "resolved": [
+      "cyclomatic_complexity"
+     ],
+     "unresolved": []
+    }
+   ]
+  },
+  {
+   "sample": "10_dict_access",
+   "expected": "nesting_depth",
+   "found": "nesting_depth",
+   "caught": true,
+   "false_alarm": null,
+   "extra": "",
+   "mercy_seconds": 6.2,
+   "items": [
+    {
+     "valid": true,
+     "equivalent": true,
+     "attempts": 1,
+     "cases": 10,
+     "note": "",
+     "before": {
+      "nesting": 5,
+      "complexity": 6,
+      "length": 12
+     },
+     "revised": "def user_emails(users, domain):\n    emails = []\n    for user in users:\n        if not user.get(\"active\"):\n            continue\n        contact = user.get(\"contact\")\n        if not isinstance(contact, dict):\n            continue\n        email = contact.get(\"email\")\n        if not email or not email.endswith(domain):\n            continue\n        emails.append(email.lower())\n    return emails",
+     "explanation": "The function is now flat: each early\u2011exit condition is handled with a guard clause (`continue`). This removes the five\u2011level nesting and makes the main logic (adding the lower\u2011cased email) obvious. Dictionary access is performed with `dict.get` where a missing key is an expected, non\u2011exceptional case (e.g., missing \"contact\" or \"email\"). The behavior is unchanged \u2013 only active users with a contact dict that contains an email ending with the given domain are added to the result.",
+     "mismatches": [],
+     "targeted": [
+      "nesting_depth"
+     ],
+     "after": {
+      "nesting": 2,
+      "complexity": 6,
+      "length": 13
+     },
+     "resolved": [
+      "nesting_depth"
+     ],
+     "unresolved": []
+    }
+   ]
+  },
+  {
+   "sample": "11_string_builder",
+   "expected": "nesting_depth",
+   "found": "nesting_depth",
+   "caught": true,
+   "false_alarm": null,
+   "extra": "",
+   "mercy_seconds": 13.7,
+   "items": [
+    {
+     "valid": true,
+     "equivalent": true,
+     "attempts": 1,
+     "cases": 12,
+     "note": "",
+     "before": {
+      "nesting": 5,
+      "complexity": 7,
+      "length": 22
+     },
+     "revised": "def _format_value(value):\n    if value is None:\n        return \"\"\n    if isinstance(value, str):\n        return f'\\\"{value}\\\"' if ',' in value else value\n    return str(value)\n\ndef to_csv(rows, columns):\n    lines = [\",\".join(columns)]\n    for row in rows:\n        values = [_format_value(row.get(col)) for col in columns]\n        lines.append(\",\".join(values))\n    return \"\\n\".join(lines) + \"\\n\"",
+     "explanation": "The function is flattened to a single level of indentation. A guard\u2011style approach is used by retrieving each column value with `row.get(col)`, which returns ``None`` for missing keys; the helper `_format_value` then converts ``None`` to an empty string, handles quoting of strings containing commas, and stringifies other types. This removes the deep nested ``if`` blocks and makes the main loop easy to read while preserving the original CSV output format, including the trailing newline.",
+     "mismatches": [],
+     "targeted": [
+      "nesting_depth"
+     ],
+     "after": {
+      "nesting": 1,
+      "complexity": 4,
+      "length": 6
+     },
+     "resolved": [
+      "nesting_depth"
+     ],
+     "unresolved": []
+    }
+   ]
+  },
+  {
+   "sample": "12_module_import",
+   "expected": "nesting_depth",
+   "found": "naming, nesting_depth",
+   "caught": true,
+   "false_alarm": null,
+   "extra": "naming",
+   "mercy_seconds": 1.5,
+   "items": [
+    {
+     "valid": true,
+     "equivalent": null,
+     "attempts": 1,
+     "cases": 0,
+     "note": "not tested: depends on code outside the snippet (math)",
+     "before": {
+      "nesting": 5,
+      "complexity": 6,
+      "length": 10
+     },
+     "revised": "def nearest_points(points, origin, radius):\n    \"\"\"Return a list of unique points within *radius* of *origin*.\n\n    The function skips ``None`` entries and points that are not a 2\u2011tuple\n    (or list) of coordinates.  It preserves the original order and avoids\n    duplicates.\n    \"\"\"\n    import math\n    found = []\n    for p in points:\n        # Guard clauses to keep nesting shallow\n        if p is None:\n            continue\n        if len(p) != 2:\n            continue\n        # Compute Euclidean distance\n        d = math.hypot(p[0] - origin[0], p[1] - origin[1])\n        if d > radius:\n            continue\n        if p in found:\n            continue\n        found.append(p)\n    return found",
+     "explanation": "The original implementation used four nested ``if`` statements, making the core logic hard to follow. The refactored version replaces those nested checks with early ``continue`` guard clauses, reducing the nesting depth to a single level inside the loop. The functional behavior is unchanged: it still skips ``None`` values, ignores items whose length is not 2, computes the Euclidean distance with ``math.hypot``, includes points whose distance is within the radius, and avoids duplicate entries. An inline ``import math`` ensures the function is self\u2011contained.",
+     "mismatches": [],
+     "targeted": [
+      "naming",
+      "nesting_depth"
+     ],
+     "after": {
+      "nesting": 2,
+      "complexity": 6,
+      "length": 23
+     },
+     "resolved": [
+      "nesting_depth"
+     ],
+     "unresolved": [
+      "naming"
+     ]
+    }
+   ]
+  },
+  {
+   "sample": "13_class_method",
+   "expected": "nesting_depth",
+   "found": "nesting_depth",
+   "caught": true,
+   "false_alarm": null,
+   "extra": "",
+   "mercy_seconds": 1.6,
+   "items": [
+    {
+     "valid": true,
+     "equivalent": null,
+     "attempts": 1,
+     "cases": 0,
+     "note": "not tested: methods need a class instance",
+     "before": {
+      "nesting": 5,
+      "complexity": 6,
+      "length": 12
+     },
+     "revised": "def restock(self, deliveries):\n    added = 0\n    for delivery in deliveries:\n        if not delivery:\n            continue\n        for sku, qty in delivery.items():\n            if qty <= 0:\n                continue\n            self.stock[sku] = self.stock.get(sku, 0) + qty\n            added += qty\n    return added",
+     "explanation": "The function is flattened to a maximum of two indentation levels by using guard clauses (`continue`) for the failure cases: empty deliveries and non\u2011positive quantities. The inner stock update is simplified with `dict.get` to handle missing keys in a single line, preserving the original behavior of creating a new entry when the SKU is absent. The overall logic and return value remain unchanged.",
+     "mismatches": [],
+     "targeted": [
+      "nesting_depth"
+     ],
+     "after": {
+      "nesting": 3,
+      "complexity": 5,
+      "length": 11
+     },
+     "resolved": [
+      "nesting_depth"
+     ],
+     "unresolved": []
+    }
+   ]
+  },
+  {
+   "sample": "14_control_clean",
+   "expected": "none",
+   "found": "none",
+   "caught": null,
+   "false_alarm": false,
+   "extra": ""
+  },
+  {
+   "sample": "15_control_clean",
+   "expected": "none",
+   "found": "none",
+   "caught": null,
+   "false_alarm": false,
+   "extra": ""
+  }
+ ]
+}

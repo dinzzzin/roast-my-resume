@@ -179,3 +179,18 @@ def test_builtins_locals_imports_and_recursion_are_not_outside_names():
     src = ("def f(xs, n=0):\n    import re\n    total = sum(len(x) for x in xs)\n"
            "    def helper(y):\n        return y\n    return f(xs[1:], n) if n else helper(total)\n")
     assert equivalence.untestable_reason(src) is None
+
+
+def test_state_change_found_even_when_inputs_pass_every_argument():
+    """Reproduces the live eval run: generated inputs passed `seen` explicitly, hiding the bug."""
+    cases = ["([{'tags': ['A']}], [])", "([{'tags': ['x']}], ['y'])"]
+    result = equivalence.run_cases(MUTABLE_ORIGINAL, MUTABLE_FIXED, cases)
+    assert result.equivalent is True
+    assert "default arguments" in result.note
+
+
+def test_default_probe_quiet_when_defaults_are_harmless():
+    original = "def greet(name, punct='!'):\n    return 'hi ' + name + punct\n"
+    revised = "def greet(name, punct='!'):\n    return f'hi {name}{punct}'\n"
+    result = equivalence.run_cases(original, revised, ["('ann', '?')", "('bo', '.')"])
+    assert result.equivalent is True and result.note == ""

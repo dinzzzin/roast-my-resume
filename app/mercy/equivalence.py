@@ -111,8 +111,11 @@ def run_cases(original: str, revised: str, cases: list[str]) -> EquivalenceResul
     if not cases:
         return EquivalenceResult(None, note="no usable test inputs")
 
+    n_defaults = len(orig_fn.args.defaults)
     payload = json.dumps({"original": original, "original_name": orig_fn.name,
-                          "revised": revised, "revised_name": rev_fn.name, "cases": cases})
+                          "revised": revised, "revised_name": rev_fn.name, "cases": cases,
+                          "required": len(orig_fn.args.args) - n_defaults,
+                          "has_defaults": n_defaults > 0})
     with tempfile.TemporaryDirectory() as workdir:
         try:
             proc = subprocess.run([sys.executable, "-I", str(RUNNER)], input=payload,
@@ -143,11 +146,19 @@ def run_cases(original: str, revised: str, cases: list[str]) -> EquivalenceResul
     notes = []
     if mismatches:
         notes.append(f"{len(mismatches)} of {len(runs)} inputs behave differently")
+    default_diffs = [r for r in runs if "default_probe" in r
+                     and r["default_probe"]["original"] != r["default_probe"]["revised"]]
     if state_diffs:
         r = state_diffs[0]
         notes.append(f"state changed: calling with {r['input']} then {r['follow_up']}, the original "
                      f"{_describe(r['original_again'])} but the rewrite "
                      f"{_describe(r['revised_again'])} (shared state was removed or added)")
+    elif default_diffs:
+        r = default_diffs[0]
+        o, v = r["default_probe"]["original"], r["default_probe"]["revised"]
+        notes.append(f"state changed: calling twice with default arguments, the original "
+                     f"{_describe(o[1])} on the second call but the rewrite {_describe(v[1])} "
+                     f"(shared state in a default argument was removed or added)")
     return EquivalenceResult(not mismatches, cases_checked=len(runs), mismatches=mismatches,
                              note="; ".join(notes))
 

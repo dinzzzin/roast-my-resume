@@ -29,8 +29,10 @@ def _load(source: str, name: str):
     return namespace[name]
 
 
-def _outcome(func, case_src: str) -> dict:
+def _outcome(func, case_src: str, keep: int | None = None) -> dict:
     args = ast.literal_eval(case_src)  # fresh copy per call: functions may mutate inputs
+    if keep is not None:
+        args = args[:keep]  # drop optional arguments so their defaults are used
     try:
         return {"ok": True, "value": repr(func(*args))}
     except Exception as e:  # noqa: BLE001 - recording the exception IS the result
@@ -57,6 +59,15 @@ def main() -> None:
                 "original": _outcome(original, case), "revised": _outcome(revised, case),
                 "original_again": _outcome(original, follow_up),
                 "revised_again": _outcome(revised, follow_up)})
+            if payload.get("has_defaults"):
+                # Same two-call probe, but relying on default arguments. Test inputs often
+                # pass every argument explicitly, which hides a buggy mutable default.
+                keep = payload["required"]
+                original = _load(payload["original"], payload["original_name"])
+                revised = _load(payload["revised"], payload["revised_name"])
+                result["cases"][-1]["default_probe"] = {
+                    "original": [_outcome(original, case, keep), _outcome(original, follow_up, keep)],
+                    "revised": [_outcome(revised, case, keep), _outcome(revised, follow_up, keep)]}
     except Exception as e:  # noqa: BLE001
         result["load_error"] = f"{type(e).__name__}: {e}"
     sys.stdout = real_stdout

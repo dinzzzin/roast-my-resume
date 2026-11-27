@@ -33,7 +33,8 @@ def is_demo_mode() -> bool:
 def _client():
     from openai import OpenAI
     base_url, key_env, _ = PROVIDERS[provider_name()]
-    return OpenAI(api_key=os.environ[key_env], base_url=base_url)
+    # Free tiers rate-limit on tokens per minute; the client backs off and retries 429s.
+    return OpenAI(api_key=os.environ[key_env], base_url=base_url, max_retries=6)
 
 
 def model_name() -> str:

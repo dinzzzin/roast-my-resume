@@ -131,3 +131,66 @@ def test_mercy_retries_until_behavior_matches(monkeypatch):
     item = rewrite._rewrite_one(finding, "code")
     assert item.attempts == 2 and item.equivalent is True and item.explanation == "v2"
     assert "raised KeyError" in sent[1]  # the mismatch was fed back to the model
+
+
+SAMPLES = Path(__file__).parent.parent / "eval" / "code_samples"
+MUTABLE_ORIGINAL = (SAMPLES / "07_mutable_default.py").read_text()
+# The live rewrite from our eval run: correctly replaces seen=[] with seen=None.
+MUTABLE_FIXED = '''def collect_tags(posts, seen=None):
+    if seen is None:
+        seen = []
+    for post in posts:
+        if not post:
+            continue
+        for tag in post.get("tags", []):
+            if not tag:
+                continue
+            tag_lc = tag.lower()
+            if tag_lc not in seen:
+                seen.append(tag_lc)
+    return seen'''
+
+
+def test_mutable_default_fix_is_flagged_as_state_change_not_failure():
+    cases = ["([{'tags': ['A', 'b']}],)", "([{'tags': ['x']}, None],)"]
+    result = equivalence.run_cases(MUTABLE_ORIGINAL, MUTABLE_FIXED, cases)
+    assert result.equivalent is True          # same answer on every single call...
+    assert "state changed" in result.note     # ...but repeat calls reveal the removed bug
+
+
+def test_unchanged_function_has_no_state_warning():
+    result = equivalence.run_cases(MUTABLE_ORIGINAL, MUTABLE_ORIGINAL, ["([{'tags': ['A']}],)"])
+    assert result.equivalent is True and result.note == ""
+
+
+def test_cases_do_not_leak_state_into_each_other():
+    """Each input gets a fresh function, so case 2 isn't polluted by case 1."""
+    cases = ["([{'tags': ['A']}],)", "([{'tags': ['B']}],)"]
+    result = equivalence.run_cases(MUTABLE_ORIGINAL, MUTABLE_FIXED, cases)
+    assert result.mismatches == []
+
+
+def test_module_level_import_is_detected_statically():
+    src = (SAMPLES / "12_module_import.py").read_text()
+    assert equivalence.untestable_reason(src) == "depends on code outside the snippet (math)"
+
+
+def test_builtins_locals_imports_and_recursion_are_not_outside_names():
+    src = ("def f(xs, n=0):\n    import re\n    total = sum(len(x) for x in xs)\n"
+           "    def helper(y):\n        return y\n    return f(xs[1:], n) if n else helper(total)\n")
+    assert equivalence.untestable_reason(src) is None
+
+
+def test_state_change_found_even_when_inputs_pass_every_argument():
+    """Reproduces the live eval run: generated inputs passed `seen` explicitly, hiding the bug."""
+    cases = ["([{'tags': ['A']}], [])", "([{'tags': ['x']}], ['y'])"]
+    result = equivalence.run_cases(MUTABLE_ORIGINAL, MUTABLE_FIXED, cases)
+    assert result.equivalent is True
+    assert "default arguments" in result.note
+
+
+def test_default_probe_quiet_when_defaults_are_harmless():
+    original = "def greet(name, punct='!'):\n    return 'hi ' + name + punct\n"
+    revised = "def greet(name, punct='!'):\n    return f'hi {name}{punct}'\n"
+    result = equivalence.run_cases(original, revised, ["('ann', '?')", "('bo', '.')"])
+    assert result.equivalent is True and result.note == ""

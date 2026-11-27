@@ -9,6 +9,7 @@ ast.literal_eval, which cannot execute code. The functions themselves run in a
 separate, time- and memory-limited process (see _runner.py).
 """
 import ast
+import builtins
 import json
 import os
 import subprocess
@@ -49,10 +50,29 @@ def _main_function(source: str, preferred: str | None = None) -> ast.FunctionDef
     return funcs[-1] if funcs else None  # helpers usually come first, the entry point last
 
 
+def outside_names(func: ast.FunctionDef) -> list[str]:
+    """Names the function reads that it never defines: imports, globals, other helpers."""
+    bound = {func.name} | set(dir(builtins))
+    for node in ast.walk(func):
+        if isinstance(node, ast.arg):
+            bound.add(node.arg)
+        elif isinstance(node, ast.Name) and isinstance(node.ctx, (ast.Store, ast.Del)):
+            bound.add(node.id)
+        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            bound.add(node.name)
+        elif isinstance(node, (ast.Import, ast.ImportFrom)):
+            bound.update((a.asname or a.name).split(".")[0] for a in node.names)
+    loaded = {n.id for n in ast.walk(func) if isinstance(n, ast.Name) and isinstance(n.ctx, ast.Load)}
+    return sorted(loaded - bound)
+
+
 def untestable_reason(source: str) -> str | None:
     func = _main_function(source)
     if func is None:
         return "no top-level function found"
+    missing = outside_names(func)
+    if missing:
+        return f"depends on code outside the snippet ({', '.join(missing)})"
     if func.args.args and func.args.args[0].arg in {"self", "cls"}:
         return "methods need a class instance"
     if any(isinstance(n, (ast.Yield, ast.YieldFrom)) for n in ast.walk(func)):
@@ -91,8 +111,11 @@ def run_cases(original: str, revised: str, cases: list[str]) -> EquivalenceResul
     if not cases:
         return EquivalenceResult(None, note="no usable test inputs")
 
+    n_defaults = len(orig_fn.args.defaults)
     payload = json.dumps({"original": original, "original_name": orig_fn.name,
-                          "revised": revised, "revised_name": rev_fn.name, "cases": cases})
+                          "revised": revised, "revised_name": rev_fn.name, "cases": cases,
+                          "required": len(orig_fn.args.args) - n_defaults,
+                          "has_defaults": n_defaults > 0})
     with tempfile.TemporaryDirectory() as workdir:
         try:
             proc = subprocess.run([sys.executable, "-I", str(RUNNER)], input=payload,
@@ -108,16 +131,36 @@ def run_cases(original: str, revised: str, cases: list[str]) -> EquivalenceResul
         return EquivalenceResult(None, note=f"could not load functions: {result['load_error']}")
 
     runs = result["cases"]
-    # Code that depends on imports or helpers outside the snippet can't run standalone.
+    # Backstop for dependencies the static check can't see (e.g. names built dynamically).
     if runs and all(r["original"].get("error") == "NameError" for r in runs):
         return EquivalenceResult(None, note="function depends on code outside the snippet")
 
     mismatches = [{"input": r["input"], "original": _describe(r["original"]),
                    "revised": _describe(r["revised"])}
                   for r in runs if r["original"] != r["revised"]]
+    # Same result per call, different result on a repeat call = shared state changed
+    # (e.g. a mutable default argument was fixed). Reported, never fed back as an error,
+    # because the retry loop would otherwise push the model to restore the bug.
+    state_diffs = [r for r in runs if r["original"] == r["revised"]
+                   and r["original_again"] != r["revised_again"]]
+    notes = []
+    if mismatches:
+        notes.append(f"{len(mismatches)} of {len(runs)} inputs behave differently")
+    default_diffs = [r for r in runs if "default_probe" in r
+                     and r["default_probe"]["original"] != r["default_probe"]["revised"]]
+    if state_diffs:
+        r = state_diffs[0]
+        notes.append(f"state changed: calling with {r['input']} then {r['follow_up']}, the original "
+                     f"{_describe(r['original_again'])} but the rewrite "
+                     f"{_describe(r['revised_again'])} (shared state was removed or added)")
+    elif default_diffs:
+        r = default_diffs[0]
+        o, v = r["default_probe"]["original"], r["default_probe"]["revised"]
+        notes.append(f"state changed: calling twice with default arguments, the original "
+                     f"{_describe(o[1])} on the second call but the rewrite {_describe(v[1])} "
+                     f"(shared state in a default argument was removed or added)")
     return EquivalenceResult(not mismatches, cases_checked=len(runs), mismatches=mismatches,
-                             note="" if not mismatches else f"{len(mismatches)} of {len(runs)} "
-                                                            "inputs behave differently")
+                             note="; ".join(notes))
 
 
 def _describe(outcome: dict) -> str:

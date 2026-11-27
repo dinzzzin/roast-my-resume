@@ -1,0 +1,202 @@
+{
+ "meta": {
+  "when": "2026-11-27 14:23",
+  "api": "http://localhost:8000",
+  "model": "openai/gpt-oss-120b"
+ },
+ "rows": [
+  {
+   "sample": "07_mutable_default",
+   "expected": "nesting_depth",
+   "found": "nesting_depth",
+   "caught": true,
+   "false_alarm": null,
+   "extra": "",
+   "mercy_seconds": 4.6,
+   "items": [
+    {
+     "valid": true,
+     "equivalent": true,
+     "attempts": 1,
+     "cases": 12,
+     "note": "",
+     "before": {
+      "nesting": 5,
+      "complexity": 6,
+      "length": 8
+     },
+     "revised": "def collect_tags(posts, seen=None):\n    if seen is None:\n        seen = []\n    for post in posts:\n        if not post:\n            continue\n        for tag in post.get(\"tags\", []):\n            if not tag:\n                continue\n            tag_lc = tag.lower()\n            if tag_lc not in seen:\n                seen.append(tag_lc)\n    return seen",
+     "explanation": "Refactored to eliminate deep nesting by using guard clauses (`continue`) for failure cases, reducing the indentation to a maximum of two levels. Replaced the mutable default argument `seen=[]` with `seen=None` and an explicit list creation to avoid shared state across calls. The logic and return value remain identical: it collects unique lower\u2011cased tags from each non\u2011empty post, preserving order.",
+     "mismatches": [],
+     "targeted": [
+      "nesting_depth"
+     ],
+     "after": {
+      "nesting": 3,
+      "complexity": 7,
+      "length": 13
+     },
+     "resolved": [
+      "nesting_depth"
+     ],
+     "unresolved": []
+    }
+   ]
+  },
+  {
+   "sample": "08_boolean_soup",
+   "expected": "cyclomatic_complexity",
+   "found": "cyclomatic_complexity",
+   "caught": true,
+   "false_alarm": null,
+   "extra": "",
+   "mercy_seconds": 6.7,
+   "items": [
+    {
+     "valid": true,
+     "equivalent": true,
+     "attempts": 1,
+     "cases": 12,
+     "note": "",
+     "before": {
+      "nesting": 2,
+      "complexity": 18,
+      "length": 9
+     },
+     "revised": "def is_eligible(age, income, student, veteran, state, score):\n    \"\"\"Determine eligibility based on age, income, student status, veteran status, state, and score.\n\n    The logic mirrors the original implementation but is broken into small, named helpers\n    and uses early returns to keep the cyclomatic complexity low.\n    \"\"\"\n    def _basic_criteria():\n        # (age >= 18 and income < 40000) or (student and age < 26) or veteran\n        return (age >= 18 and income < 40000) or (student and age < 26) or veteran\n\n    def _state_criteria():\n        # state == \"NY\" or state == \"NJ\" or (state == \"CT\" and score > 600)\n        return state in {\"NY\", \"NJ\"} or (state == \"CT\" and score > 600)\n\n    def _score_income_criteria():\n        # (score > 700 and income < 60000) or (veteran and score > 550)\n        return (score > 700 and income < 60000) or (veteran and score > 550)\n\n    def _senior_criteria():\n        # (age > 65 and income < 30000) or age > 70\n        return (age > 65 and income < 30000) or (age > 70)\n\n    # First eligibility block\n    if _basic_criteria():\n        if _state_criteria() or _score_income_criteria():\n            return True\n\n    # Senior eligibility block\n    if _senior_criteria():\n        return (score > 500) or veteran\n\n    return False",
+     "explanation": "The original function had a cyclomatic complexity of 18 due to many combined boolean expressions and nested if/elif statements. The refactor extracts each logical group into its own helper function, giving each a clear name and reducing the number of decision points in the main flow. Early returns replace the nested structure, and a set lookup simplifies the state comparison. No functional behavior is changed; the boolean logic and precedence remain identical to the original implementation.",
+     "mismatches": [],
+     "targeted": [
+      "cyclomatic_complexity"
+     ],
+     "after": {
+      "nesting": 2,
+      "complexity": 17,
+      "length": 32
+     },
+     "resolved": [],
+     "unresolved": [
+      "cyclomatic_complexity"
+     ]
+    }
+   ]
+  },
+  {
+   "sample": "09_copy_paste",
+   "expected": "cyclomatic_complexity",
+   "found": "cyclomatic_complexity",
+   "caught": true,
+   "false_alarm": null,
+   "extra": "",
+   "mercy_seconds": 4.8,
+   "items": [
+    {
+     "valid": true,
+     "equivalent": true,
+     "attempts": 1,
+     "cases": 12,
+     "note": "",
+     "before": {
+      "nesting": 2,
+      "complexity": 13,
+      "length": 33
+     },
+     "revised": "def grade_summary(math=None, science=None, english=None):\n    \"\"\"Return a dict mapping each provided subject to its letter grade.\"\"\"\n    def _letter_grade(scores):\n        if not scores:\n            return None\n        avg = sum(scores) / len(scores)\n        for threshold, grade in ((90, \"A\"), (80, \"B\"), (70, \"C\")):\n            if avg >= threshold:\n                return grade\n        return \"F\"\n\n    out = {}\n    for name, scores in ((\"math\", math), (\"science\", science), (\"english\", english)):\n        if scores:\n            out[name] = _letter_grade(scores)\n    return out",
+     "explanation": "Extracted the grade\u2011determination logic into a helper `_letter_grade`, replaced the repeated if/elif chains with a small lookup loop, and iterated over the subjects in a single loop. This cuts the cyclomatic complexity from 13 to a much lower value while preserving the original behavior (subjects with empty or falsy lists are omitted).",
+     "mismatches": [],
+     "targeted": [
+      "cyclomatic_complexity"
+     ],
+     "after": {
+      "nesting": 2,
+      "complexity": 6,
+      "length": 16
+     },
+     "resolved": [
+      "cyclomatic_complexity"
+     ],
+     "unresolved": []
+    }
+   ]
+  },
+  {
+   "sample": "11_string_builder",
+   "expected": "nesting_depth",
+   "found": "nesting_depth",
+   "caught": true,
+   "false_alarm": null,
+   "extra": "",
+   "mercy_seconds": 5.5,
+   "items": [
+    {
+     "valid": true,
+     "equivalent": true,
+     "attempts": 1,
+     "cases": 12,
+     "note": "",
+     "before": {
+      "nesting": 5,
+      "complexity": 7,
+      "length": 22
+     },
+     "revised": "def to_csv(rows, columns):\n    def _format(value):\n        if value is None:\n            return \"\"\n        if isinstance(value, str):\n            return f'\"{value}\"' if ',' in value else value\n        return str(value)\n    lines = [\",\".join(columns)]\n    for row in rows:\n        values = [_format(row.get(col)) for col in columns]\n        lines.append(\",\".join(values))\n    return \"\\n\".join(lines) + \"\\n\"",
+     "explanation": "The function is refactored to eliminate deep nesting. A small helper `_format` handles the conversion of each cell value, allowing the main loop to stay at a single indentation level. Missing keys are accessed with `row.get(col)`, which returns ``None`` for absent columns; the helper treats ``None`` the same way the original code did (producing an empty string). This preserves the original behavior for present values, ``None`` values, and values containing commas. The CSV lines are built in a list and joined at the end, keeping the output identical (including the trailing newline).",
+     "mismatches": [],
+     "targeted": [
+      "nesting_depth"
+     ],
+     "after": {
+      "nesting": 1,
+      "complexity": 6,
+      "length": 12
+     },
+     "resolved": [
+      "nesting_depth"
+     ],
+     "unresolved": []
+    }
+   ]
+  },
+  {
+   "sample": "12_module_import",
+   "expected": "nesting_depth",
+   "found": "naming, nesting_depth",
+   "caught": true,
+   "false_alarm": null,
+   "extra": "naming",
+   "mercy_seconds": 5.7,
+   "items": [
+    {
+     "valid": true,
+     "equivalent": true,
+     "attempts": 2,
+     "cases": 12,
+     "note": "",
+     "before": {
+      "nesting": 5,
+      "complexity": 6,
+      "length": 10
+     },
+     "revised": "def nearest_points(points, origin, radius):\n    \"\"\"Return a list of unique points within *radius* of *origin*.\n\n    The function mirrors the original implementation's behavior exactly,\n    including raising a ``NameError`` if ``math`` has not been imported.\n    It skips ``None`` entries and any point that does not have exactly two\n    coordinates, preserving the order of first appearance while avoiding\n    duplicates.\n    \"\"\"\n    found = []\n    ox, oy = origin\n    for p in points:\n        # Guard clauses to keep nesting shallow\n        if p is None:\n            continue\n        if len(p) != 2:\n            continue\n        # The following line will raise NameError if ``math`` is not in scope,\n        # matching the original function's behavior.\n        d = math.hypot(p[0] - ox, p[1] - oy)\n        if d <= radius and p not in found:\n            found.append(p)\n    return found",
+     "explanation": "The refactor removes deep nesting by using early ``continue`` statements, but it does **not** import ``math`` or change duplicate\u2011checking logic. This ensures that calls to ``math.hypot`` behave exactly as in the original code, raising a ``NameError`` when ``math`` is undefined, and that unhashable points are handled correctly via list membership checks.",
+     "mismatches": [],
+     "targeted": [
+      "naming",
+      "nesting_depth"
+     ],
+     "after": {
+      "nesting": 2,
+      "complexity": 6,
+      "length": 23
+     },
+     "resolved": [
+      "nesting_depth"
+     ],
+     "unresolved": [
+      "naming"
+     ]
+    }
+   ]
+  }
+ ]
+}

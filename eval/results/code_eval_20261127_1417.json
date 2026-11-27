@@ -1,0 +1,202 @@
+{
+ "meta": {
+  "when": "2026-11-27 14:17",
+  "api": "http://localhost:8000",
+  "model": "openai/gpt-oss-120b"
+ },
+ "rows": [
+  {
+   "sample": "07_mutable_default",
+   "expected": "nesting_depth",
+   "found": "nesting_depth",
+   "caught": true,
+   "false_alarm": null,
+   "extra": "",
+   "mercy_seconds": 5.8,
+   "items": [
+    {
+     "valid": true,
+     "equivalent": true,
+     "attempts": 1,
+     "cases": 12,
+     "note": "",
+     "before": {
+      "nesting": 5,
+      "complexity": 6,
+      "length": 8
+     },
+     "revised": "def collect_tags(posts, seen=None):\n    if seen is None:\n        seen = []\n    for post in posts:\n        if not post:\n            continue\n        for tag in post.get(\"tags\", []):\n            if not tag:\n                continue\n            tag_lc = tag.lower()\n            if tag_lc not in seen:\n                seen.append(tag_lc)\n    return seen",
+     "explanation": "The refactor removes the mutable default argument by initializing `seen` to a new list when `None` is passed. Guard clauses (`continue`) replace deep nesting, flattening the logic to a maximum of two indentation levels. The `post.get(\"tags\", [])` call safely handles missing \"tags\" keys without raising `KeyError`, preserving the original silent\u2011skip behavior. The core functionality\u2014collecting unique lower\u2011cased tags while preserving order\u2014is unchanged.",
+     "mismatches": [],
+     "targeted": [
+      "nesting_depth"
+     ],
+     "after": {
+      "nesting": 3,
+      "complexity": 7,
+      "length": 13
+     },
+     "resolved": [
+      "nesting_depth"
+     ],
+     "unresolved": []
+    }
+   ]
+  },
+  {
+   "sample": "08_boolean_soup",
+   "expected": "cyclomatic_complexity",
+   "found": "cyclomatic_complexity",
+   "caught": true,
+   "false_alarm": null,
+   "extra": "",
+   "mercy_seconds": 6.5,
+   "items": [
+    {
+     "valid": true,
+     "equivalent": true,
+     "attempts": 1,
+     "cases": 12,
+     "note": "",
+     "before": {
+      "nesting": 2,
+      "complexity": 18,
+      "length": 9
+     },
+     "revised": "def is_eligible(age, income, student, veteran, state, score):\n    \"\"\"Determine eligibility based on age, income, student status, veteran status, state, and score.\"\"\"\n    # Senior applicants have a separate rule\n    if (age > 65 and income < 30000) or age > 70:\n        return (score > 500) or veteran\n\n    # General eligibility\n    if (age >= 18 and income < 40000) or (student and age < 26) or veteran:\n        if state in {\"NY\", \"NJ\"} or (state == \"CT\" and score > 600):\n            return True\n        if (score > 700 and income < 60000) or (veteran and score > 550):\n            return True\n\n    return False",
+     "explanation": "The refactor extracts the two independent decision blocks into early\u2011return sections, removing nested `if/elif` chains and reducing cyclomatic complexity. A set lookup replaces the repeated state comparisons, and each logical condition is kept identical to the original (operator precedence unchanged). The behavior of the function is preserved while making the flow easier to read and test.",
+     "mismatches": [],
+     "targeted": [
+      "cyclomatic_complexity"
+     ],
+     "after": {
+      "nesting": 2,
+      "complexity": 17,
+      "length": 14
+     },
+     "resolved": [],
+     "unresolved": [
+      "cyclomatic_complexity"
+     ]
+    }
+   ]
+  },
+  {
+   "sample": "09_copy_paste",
+   "expected": "cyclomatic_complexity",
+   "found": "cyclomatic_complexity",
+   "caught": true,
+   "false_alarm": null,
+   "extra": "",
+   "mercy_seconds": 4.2,
+   "items": [
+    {
+     "valid": true,
+     "equivalent": true,
+     "attempts": 1,
+     "cases": 12,
+     "note": "",
+     "before": {
+      "nesting": 2,
+      "complexity": 13,
+      "length": 33
+     },
+     "revised": "def _grade_from_average(avg):\n    if avg >= 90:\n        return \"A\"\n    if avg >= 80:\n        return \"B\"\n    if avg >= 70:\n        return \"C\"\n    return \"F\"\n\ndef grade_summary(math=None, science=None, english=None):\n    out = {}\n    for name, scores in ((\"math\", math), (\"science\", science), (\"english\", english)):\n        if scores:\n            avg = sum(scores) / len(scores)\n            out[name] = _grade_from_average(avg)\n    return out",
+     "explanation": "Extracted the grade\u2011determination logic into a helper `_grade_from_average`, turning the repeated if/elif chains into simple calls. Replaced the three near\u2011identical blocks with a loop over a tuple of (subject, scores), reducing cyclomatic complexity dramatically. Kept the original truthiness checks (`if scores:`) so empty or falsy inputs are ignored exactly as before. The function signature now defaults arguments to None, preserving the original behavior when arguments are omitted. No functional changes were introduced; the output mapping of subjects to letter grades remains identical.",
+     "mismatches": [],
+     "targeted": [
+      "cyclomatic_complexity"
+     ],
+     "after": {
+      "nesting": 2,
+      "complexity": 4,
+      "length": 8
+     },
+     "resolved": [
+      "cyclomatic_complexity"
+     ],
+     "unresolved": []
+    }
+   ]
+  },
+  {
+   "sample": "11_string_builder",
+   "expected": "nesting_depth",
+   "found": "nesting_depth",
+   "caught": true,
+   "false_alarm": null,
+   "extra": "",
+   "mercy_seconds": 4.0,
+   "items": [
+    {
+     "valid": true,
+     "equivalent": true,
+     "attempts": 1,
+     "cases": 12,
+     "note": "",
+     "before": {
+      "nesting": 5,
+      "complexity": 7,
+      "length": 22
+     },
+     "revised": "def to_csv(rows, columns):\n    lines = [\",\".join(columns)]\n    for row in rows:\n        values = []\n        for col in columns:\n            value = row.get(col)\n            if value is None:\n                values.append(\"\")\n                continue\n            if isinstance(value, str):\n                if \",\" in value:\n                    values.append('\"' + value + '\"')\n                else:\n                    values.append(value)\n            else:\n                values.append(str(value))\n        lines.append(\",\".join(values))\n    return \"\\n\".join(lines) + \"\\n\"",
+     "explanation": "The function was refactored to eliminate deep nesting. A guard clause (`if value is None: ... continue`) handles the missing/None case early, keeping the main logic at a shallow indentation. Dictionary access now uses `row.get(col)` which returns ``None`` for missing keys, matching the original behavior where missing columns produced an empty field. The CSV lines are accumulated in a list and joined at the end, preserving the exact output format (including the trailing newline). No functional behavior was changed.",
+     "mismatches": [],
+     "targeted": [
+      "nesting_depth"
+     ],
+     "after": {
+      "nesting": 4,
+      "complexity": 6,
+      "length": 18
+     },
+     "resolved": [],
+     "unresolved": [
+      "nesting_depth"
+     ]
+    }
+   ]
+  },
+  {
+   "sample": "12_module_import",
+   "expected": "nesting_depth",
+   "found": "naming, nesting_depth",
+   "caught": true,
+   "false_alarm": null,
+   "extra": "naming",
+   "mercy_seconds": 4.6,
+   "items": [
+    {
+     "valid": true,
+     "equivalent": true,
+     "attempts": 1,
+     "cases": 12,
+     "note": "",
+     "before": {
+      "nesting": 5,
+      "complexity": 6,
+      "length": 10
+     },
+     "revised": "def nearest_points(points, origin, radius):\n    \"\"\"Return points within *radius* of *origin*.\n    Skips None entries and points that are not 2\u2011dimensional.\n    Preserves the order of first occurrence and avoids duplicates.\n    \"\"\"\n    found = []\n    for p in points:\n        if p is None:\n            continue\n        if len(p) != 2:\n            continue\n        d = math.hypot(p[0] - origin[0], p[1] - origin[1])\n        if d > radius:\n            continue\n        if p in found:\n            continue\n        found.append(p)\n    return found",
+     "explanation": "The original function used five nested if\u2011statements, which made the core logic hard to follow. By applying guard clauses that `continue` on each failure case, the nesting depth is flattened to a single level inside the loop. The refactored version retains the exact behavior: it skips None values, ignores points that aren't length\u20112 sequences, checks the Euclidean distance against the radius, and adds a point only once, preserving the original order.",
+     "mismatches": [],
+     "targeted": [
+      "naming",
+      "nesting_depth"
+     ],
+     "after": {
+      "nesting": 2,
+      "complexity": 6,
+      "length": 18
+     },
+     "resolved": [
+      "nesting_depth"
+     ],
+     "unresolved": [
+      "naming"
+     ]
+    }
+   ]
+  }
+ ]
+}
